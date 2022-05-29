@@ -18,6 +18,9 @@ from functools import reduce
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
+#consts
+COST = 50
+
 ## spotify methods
 
 def getSpotify():
@@ -116,18 +119,7 @@ def getSearches(sp, uri):
 
   return searchTerms
 
-# print(queries)
-
-"""
-youtube integration
-https://developers.google.com/youtube/v3/guides/implementation/playlists
-https://developers.google.com/youtube/v3/guides/implementation/search
-
-"""
-# youtube methods 
-
-#const
-COST = 50
+## youtube methods 
 
 def ytGetFlow(secretLocation):
   if(secretLocation == None): raise ValueError("Please provide a location for client secrets to be read from.")
@@ -136,7 +128,7 @@ def ytGetFlow(secretLocation):
 
 def ytOAuth(flow):
   # Use the client_secret.json file to identify the application requesting
-# authorization. The client ID (from that file) and access scopes are required.
+  # authorization. The client ID (from that file) and access scopes are required.
   flow.run_local_server(port=8080, prompt="consent",authorization_prompt_message="Complete Youtube OAuth screen.")
   credentials = flow.credentials
   with open(".ytcache", "wb") as fileWritable:
@@ -193,17 +185,6 @@ def addPlaylist(youtube, name, private):
   return request.execute()
 
 def getRelevantVideo(keywords):
-  #print(f"Searching {keywords}.")
-  # request = youtube.search().list(
-  #   part='snippet',
-  #   type='video',
-  #   q=keywords,
-  #   order='relevance'
-  # )
-  # response = request.execute()
-  # return response['items'][0] #most relevant result
-  
-  #must quicker and less costly than the youtube api 
   print(f"Searching '{keywords}'")
   keywords = urllib.parse.quote(keywords, safe='') #marks artists and song name slashes unsafe
   request = f"https://invidious.snopyta.org/api/v1/search?q={keywords}&fields=videoId%2Ctype%2Ctitle"
@@ -216,17 +197,6 @@ def getRelevantVideo(keywords):
     if(result['type'] == 'video'): 
       video = result
       break
-  
-  # return type of this method looks like this
-  """
-  {
-    title=<title>
-    id={
-      kind=youtube#video
-      videoId=<videoId>
-    }
-  }
-  """
 
   return dict(
     title=video['title'],
@@ -249,8 +219,6 @@ def playlistInsert(youtube, playlist, video):
     body=body
   )
   response = request.execute()
-  #print(response)
-# main
 
 def fillPlaylist(youtube, playlist, searchTerms):
   for i in range(0, len(searchTerms)):
@@ -273,9 +241,7 @@ if __name__ == '__main__':
   searchTerms = getSearches(spotify, spPlaylist['uri'])
   #youtube api interactions
   ytPlaylist = addPlaylist(youtube, spPlaylist['name'], private=False) #the main thing we care about of ytPlaylist is it's ID
-  #print(getRelevantVideo(searchTerms[0]))
   fillPlaylist(youtube, ytPlaylist, searchTerms)
   cost = COST * (1 + len(searchTerms))
   print(f"Playlist '{ytPlaylist['snippet']['title']}' fully built!")
   print(f"Youtube quota cost: {cost}.")
-
