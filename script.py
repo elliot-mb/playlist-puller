@@ -9,6 +9,10 @@ from google.auth.transport.requests import Request
 import pickle
 import html
 import os
+import json
+
+import requests #for invidious
+import urllib
 
 from functools import reduce
 import spotipy
@@ -188,19 +192,52 @@ def addPlaylist(youtube, name, private):
   )
   return request.execute()
 
-def getRelevantVideo(youtube, keywords):
+def getRelevantVideo(keywords):
   #print(f"Searching {keywords}.")
-  request = youtube.search().list(
-    part='snippet',
-    type='video',
-    q=keywords,
-    order='relevance'
+  # request = youtube.search().list(
+  #   part='snippet',
+  #   type='video',
+  #   q=keywords,
+  #   order='relevance'
+  # )
+  # response = request.execute()
+  # return response['items'][0] #most relevant result
+  
+  #must quicker and less costly than the youtube api 
+  print(f"Searching '{keywords}'")
+  keywords = urllib.parse.quote(keywords, safe='') #marks artists and song name slashes unsafe
+  request = f"https://invidious.snopyta.org/api/v1/search?q={keywords}&fields=videoId%2Ctype%2Ctitle"
+  headers = {'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:100.0) Gecko/20100101 Firefox/100.0'}
+  print(f"GET {request}")
+  response = requests.get(request, headers=headers)
+  print(f"Response: {response.status_code}")
+  response = response.json(); video = None
+  for result in response:
+    if(result['type'] == 'video'): 
+      video = result
+      break
+  
+  # return type of this method looks like this
+  """
+  {
+    title=<title>
+    id={
+      kind=youtube#video
+      videoId=<videoId>
+    }
+  }
+  """
+
+  return dict(
+    title=video['title'],
+    id=dict(
+      kind="youtube#video", 
+      videoId=video['videoId'] 
+    )
   )
-  response = request.execute()
-  return response['items'][0] #most relevant result
 
 def playlistInsert(youtube, playlist, video):
-  print(f"Adding video '{html.unescape(video['snippet']['title'])}'.")
+  print(f"Adding video '{html.unescape(video['title'])}'.")
   body = dict(
     snippet=dict(
       playlistId=playlist['id'],
@@ -217,7 +254,7 @@ def playlistInsert(youtube, playlist, video):
 
 def fillPlaylist(youtube, playlist, searchTerms):
   for i in range(0, len(searchTerms)):
-    video = getRelevantVideo(youtube, searchTerms[i])
+    video = getRelevantVideo(searchTerms[i])
     playlistInsert(youtube, playlist, video)
 
 if __name__ == '__main__':
@@ -236,8 +273,9 @@ if __name__ == '__main__':
   searchTerms = getSearches(spotify, spPlaylist['uri'])
   #youtube api interactions
   ytPlaylist = addPlaylist(youtube, spPlaylist['name'], private=False) #the main thing we care about of ytPlaylist is it's ID
+  #print(getRelevantVideo(searchTerms[0]))
   fillPlaylist(youtube, ytPlaylist, searchTerms)
-  cost = COST * (1 + 3 * len(searchTerms))
+  cost = COST * (1 + len(searchTerms))
   print(f"Playlist '{ytPlaylist['snippet']['title']}' fully built!")
   print(f"Youtube quota cost: {cost}.")
 
