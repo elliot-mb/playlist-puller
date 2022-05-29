@@ -247,7 +247,7 @@ if __name__ == '__main__':
 
   #youtube api interactions 
   print(f"Your YouTube channel Id: {ytGetChannelId(youtube)}")
-  if(input(f"Create/update the playlist '{spPlaylist['name']}'? (y/n)").lower() != "y"): print("Exiting program.")
+  if(input(f"Create/update the playlist '{spPlaylist['name']}\n'? (y/n)").lower() != "y"): print("Exiting program.")
   else:
     ytPlaylist = addPlaylist(youtube, spPlaylist['name'], private=False) #the main thing we care about of ytPlaylist is it's ID
     fillPlaylist(youtube, ytPlaylist, searchTerms)
