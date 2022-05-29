@@ -121,6 +121,11 @@ def getSearches(sp, uri):
 
 ## youtube methods 
 
+def ytGetChannelId(youtube): #only costs 1 quota unit to look up by ID :) 
+  request = youtube.channels().list(part='snippet, id', mine=True)
+  return request.execute()['id']
+# https://invidious.snopyta.org/api/v1/channels/playlists/channelid use this for searching for playlists that already exist
+
 def ytGetFlow(secretLocation):
   if(secretLocation == None): raise ValueError("Please provide a location for client secrets to be read from.")
   return InstalledAppFlow.from_client_secrets_file(secretLocation, scopes=['https://www.googleapis.com/auth/youtube.force-ssl',
@@ -239,9 +244,13 @@ if __name__ == '__main__':
   selection = selectPlaylist(playlists)
   spPlaylist = dict(name=playlists['names'][selection - 1], uri=playlists['uris'][selection - 1])
   searchTerms = getSearches(spotify, spPlaylist['uri'])
-  #youtube api interactions
-  ytPlaylist = addPlaylist(youtube, spPlaylist['name'], private=False) #the main thing we care about of ytPlaylist is it's ID
-  fillPlaylist(youtube, ytPlaylist, searchTerms)
-  cost = COST * (1 + len(searchTerms))
-  print(f"Playlist '{ytPlaylist['snippet']['title']}' fully built!")
-  print(f"Youtube quota cost: {cost}.")
+
+  #youtube api interactions 
+  print(f"Your YouTube channel Id: {ytGetChannelId(youtube)}")
+  if(input(f"Create/update the playlist '{spPlaylist['name']}'? (y/n)").lower() != "y"): print("Exiting program.")
+  else:
+    ytPlaylist = addPlaylist(youtube, spPlaylist['name'], private=False) #the main thing we care about of ytPlaylist is it's ID
+    fillPlaylist(youtube, ytPlaylist, searchTerms)
+    cost = COST * (1 + len(searchTerms))
+    print(f"Playlist '{ytPlaylist['snippet']['title']}' fully built!")
+    print(f"Youtube quota cost: {cost}.")
