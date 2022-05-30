@@ -40,6 +40,10 @@ def safeNumberEntry(prompt, min, max):
       selection = None
   return selection
 
+def inRangeInt(x, lo, hi):
+  if(type(x) != type(0)): return False
+  return (x >= lo and x <= hi)
+
 ## spotify methods
 
 def getSpotify():
@@ -50,10 +54,6 @@ def spPrompt(sp):
   name = resultCurrentUser['display_name']
   id = resultCurrentUser['id']
   print(f"You're logged in as {name} on spotify, with account id [{id}].")
-
-def inRangeInt(x, lo, hi):
-  if(type(x) != type(0)): return False
-  return (x >= lo and x <= hi)
 
 # pretty print 🖨️
 def gridPrint(elements, length, columns):
@@ -100,16 +100,6 @@ def selectPlaylist(playlists):
   count = playlists['count']
 
   selection = safeNumberEntry("Select a playlist by its number listed above", 1, count)
-  # while(not inRange(selection, 1, count)):
-  #   userInput = ""
-  #   try:
-  #     userInput = input(f"Select a playlist by its number listed above [1-{count}]:\n")
-  #     selection = int(userInput)
-  #     if(not inRange(selection, 1, count)): 
-  #       print(f"[{selection}] out of range.")
-  #   except ValueError: 
-  #     print(f"[{userInput}] is not an integer.")
-  #     selection = -1
 
   playlist = (names[selection - 1], uris[selection - 1])
   name, URI = playlist
