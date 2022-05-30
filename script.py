@@ -22,6 +22,23 @@ from spotipy.oauth2 import SpotifyOAuth
 NEW_PLAYLIST = 50
 PLAYLIST_ENTRY = 50
 CHANNEL_LOOKUP = 1
+DEFAULT_CONSOLE_WIDTH = 80
+
+## general methods 
+
+def safeNumberEntry(prompt, min, max):
+  selection = None
+  while(not inRangeInt(selection, min, max)):
+    userInput = ""
+    try:
+      userInput = input(f"{prompt} [{min}-{max}]:\n")
+      selection = int(userInput)
+      if(not inRangeInt(selection, min, max)): 
+        print(f"[{selection}] out of range.")
+    except ValueError: 
+      print(f"[{userInput}] is not an integer.")
+      selection = None
+  return selection
 
 ## spotify methods
 
@@ -34,7 +51,8 @@ def spPrompt(sp):
   id = resultCurrentUser['id']
   print(f"You're logged in as {name} on spotify, with account id [{id}].")
 
-def inRange(x, lo, hi):
+def inRangeInt(x, lo, hi):
+  if(type(x) != type(0)): return False
   return (x >= lo and x <= hi)
 
 # pretty print 🖨️
@@ -81,17 +99,17 @@ def selectPlaylist(playlists):
   uris = playlists['uris']
   count = playlists['count']
 
-  selection = -1
-  while(not inRange(selection, 1, count)):
-    userInput = ""
-    try:
-      userInput = input(f"Select a playlist by its number listed above [1-{count}]:\n")
-      selection = int(userInput)
-      if(not inRange(selection, 1, count)): 
-        print(f"[{selection}] out of range.")
-    except ValueError: 
-      print(f"[{userInput}] is not an integer.")
-      selection = -1
+  selection = safeNumberEntry("Select a playlist by its number listed above", 1, count)
+  # while(not inRange(selection, 1, count)):
+  #   userInput = ""
+  #   try:
+  #     userInput = input(f"Select a playlist by its number listed above [1-{count}]:\n")
+  #     selection = int(userInput)
+  #     if(not inRange(selection, 1, count)): 
+  #       print(f"[{selection}] out of range.")
+  #   except ValueError: 
+  #     print(f"[{userInput}] is not an integer.")
+  #     selection = -1
 
   playlist = (names[selection - 1], uris[selection - 1])
   name, URI = playlist
@@ -233,29 +251,45 @@ def fillPlaylist(youtube, playlist, searchTerms):
     video = getRelevantVideo(searchTerms[i])
     playlistInsert(youtube, playlist, video)
 
+def spPlaylistPrintSettings():
+  columns = safeNumberEntry("Enter the number of columns to display", 1, 10)
+  return (columns, DEFAULT_CONSOLE_WIDTH // columns) 
+
 if __name__ == '__main__':
+
+  exit = False
+  spShowPlaylists = True
+  cost = 0 # youtube quota cost
 
   #youtube
   youtube = build("youtube", "v3", credentials=ytRecallCredentials(ytGetFlow("client_secret.json")))
+  id, name = ytGetChannelIdName(youtube); cost += CHANNEL_LOOKUP
   #spotify
   spotify = getSpotify()
   #spotify api interactions
   spPrompt(spotify) #shows the user who they are logged in as on spotify
-  print("All playlists currently saved to your account:")
-  playlists = spGetPlaylists(spotify)
-  gridPrint(playlists['strings'], length=20, columns=4)
-  selection = selectPlaylist(playlists)
-  spPlaylist = dict(name=playlists['names'][selection - 1], uri=playlists['uris'][selection - 1])
-  searchTerms = getSearches(spotify, spPlaylist['uri'])
 
-  #youtube api interactions 
-  cost = 0
-  id, name = ytGetChannelIdName(youtube); cost += CHANNEL_LOOKUP
-  print(f"You're logged in as {name} on YouTube, with channel id [{id}].")
-  if(input(f"Create/update the playlist '{spPlaylist['name']}'? (y/n)\n").lower() != "y"): print("Exiting program.")
-  else:
-    ytPlaylist = addPlaylist(youtube, spPlaylist['name'], private=False); cost += NEW_PLAYLIST #the main thing we care about of ytPlaylist is it's ID
-    fillPlaylist(youtube, ytPlaylist, searchTerms); cost += PLAYLIST_ENTRY * len(searchTerms)
-    print(f"Playlist '{ytPlaylist['snippet']['title']}' fully built!")
+  while(not exit):
+    playlists = spGetPlaylists(spotify) # refresh playlists from spotify 
+    if(spShowPlaylists):
+      columns, length = spPlaylistPrintSettings()
+      print("All playlists currently saved to your account:")
+      gridPrint(playlists['strings'], length=length, columns=columns)
+
+    selection = selectPlaylist(playlists)
+    spPlaylist = dict(name=playlists['names'][selection - 1], uri=playlists['uris'][selection - 1])
+    searchTerms = getSearches(spotify, spPlaylist['uri'])
+
+    #youtube api interactions 
+    print(f"You're logged in as {name} on YouTube, with channel id [{id}].")
+
+    if(input(f"Create/update the playlist '{spPlaylist['name']}'? (y/n)\n").lower() != "y"): 
+      if(input("Refresh and choose another playlist? (y/n)\n").lower() != "y"): print("Quitting script."); exit = True
+      elif(input("Show refreshed list of playlists? (y/n)\n").lower() != "y"): spShowPlaylists = False
+      else: spShowPlaylists = True
+    else:
+      ytPlaylist = addPlaylist(youtube, spPlaylist['name'], private=False); cost += NEW_PLAYLIST #the main thing we care about of ytPlaylist is it's ID
+      fillPlaylist(youtube, ytPlaylist, searchTerms); cost += PLAYLIST_ENTRY * len(searchTerms) #the costly part
+      print(f"Playlist '{ytPlaylist['snippet']['title']}' fully built!")
 
   print(f"Youtube quota cost: {cost}")
