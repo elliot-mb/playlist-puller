@@ -18,8 +18,10 @@ from functools import reduce
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
-#consts
-COST = 50
+# consts
+NEW_PLAYLIST = 50
+PLAYLIST_ENTRY = 50
+CHANNEL_LOOKUP = 1
 
 ## spotify methods
 
@@ -123,7 +125,7 @@ def getSearches(sp, uri):
 
 def ytGetChannelId(youtube): #only costs 1 quota unit to look up by ID :) 
   request = youtube.channels().list(part='snippet, id', mine=True)
-  return request.execute()['id']
+  return request.execute()['items'][0]['id']
 # https://invidious.snopyta.org/api/v1/channels/playlists/channelid use this for searching for playlists that already exist
 
 def ytGetFlow(secretLocation):
@@ -246,11 +248,15 @@ if __name__ == '__main__':
   searchTerms = getSearches(spotify, spPlaylist['uri'])
 
   #youtube api interactions 
+  cost = 0
   print(f"Your YouTube channel Id: {ytGetChannelId(youtube)}")
-  if(input(f"Create/update the playlist '{spPlaylist['name']}\n'? (y/n)").lower() != "y"): print("Exiting program.")
+  cost += CHANNEL_LOOKUP
+  if(input(f"Create/update the playlist '{spPlaylist['name']}'? (y/n)\n").lower() != "y"): print("Exiting program.")
   else:
     ytPlaylist = addPlaylist(youtube, spPlaylist['name'], private=False) #the main thing we care about of ytPlaylist is it's ID
+    cost += NEW_PLAYLIST
     fillPlaylist(youtube, ytPlaylist, searchTerms)
-    cost = COST * (1 + len(searchTerms))
+    cost += PLAYLIST_ENTRY * len(searchTerms)
     print(f"Playlist '{ytPlaylist['snippet']['title']}' fully built!")
-    print(f"Youtube quota cost: {cost}.")
+
+  print(f"Youtube quota cost: {cost}")
