@@ -11,8 +11,10 @@ import html
 import os
 import json
 
-import requests #for invidious
+#for invidious
+import requests 
 import urllib
+import time
 
 from functools import reduce
 import spotipy
@@ -44,6 +46,21 @@ def safeNumberEntry(prompt, min, max):
 def inRangeInt(x, lo, hi):
   if(type(x) != type(0)): return False
   return (x >= lo and x <= hi)
+
+def requestHandle(request):
+  response = None
+  while(response == None):
+    try:
+      response = requests.get(request, headers=FAUX_USER, timeout=10)
+    except requests.Timeout:
+      print(f"Timeout error for request <{request}>, retrying.")
+      response = None
+    except requests.exceptions.ConnectionError:
+      print(f"You're not connected to the internet, request <{request}> failed. Retrying after 10 seconds.")
+      response = None
+      time.sleep(10)
+      print("Retrying.")
+  return response
 
 ## spotify methods
 
@@ -206,7 +223,7 @@ def getRelevantVideo(keywords):
   keywords = urllib.parse.quote(keywords, safe='') #marks artists and song name slashes unsafe
   request = f"https://invidious.snopyta.org/api/v1/search?q={keywords}&fields=videoId%2Ctype%2Ctitle"
   #print(f"GET {request}")
-  response = requests.get(request, headers=FAUX_USER)
+  response = requestHandle(request)
   #print(f"Response: {response.status_code}")
   response = response.json(); video = None
   for result in response:
@@ -248,7 +265,7 @@ def getPlaylists(channelId, playlistName): # list all playlists on our account
   while(response['continuation']):
     continueString = "" if response['continuation'] == 'start' else f"&continuation={response['continuation']}"
     request = f"https://invidious.snopyta.org/api/v1/channels/{channelId}/playlists?fields=playlists(title),continuation{continueString}"
-    response = requests.get(request, headers=FAUX_USER)
+    response = requestHandle(request)
     response = response.json(); 
     for playlist in response['playlists']: 
       titles.append(playlist['title'])
