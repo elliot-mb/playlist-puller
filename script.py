@@ -23,6 +23,7 @@ NEW_PLAYLIST = 50
 PLAYLIST_ENTRY = 50
 CHANNEL_LOOKUP = 1
 DEFAULT_CONSOLE_WIDTH = 80
+FAUX_USER = {'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:100.0) Gecko/20100101 Firefox/100.0'}
 
 ## general methods 
 
@@ -201,13 +202,12 @@ def addPlaylist(youtube, name, private):
   return request.execute()
 
 def getRelevantVideo(keywords):
-  print(f"Searching '{keywords}'")
+  #print(f"Searching '{keywords}'")
   keywords = urllib.parse.quote(keywords, safe='') #marks artists and song name slashes unsafe
   request = f"https://invidious.snopyta.org/api/v1/search?q={keywords}&fields=videoId%2Ctype%2Ctitle"
-  headers = {'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:100.0) Gecko/20100101 Firefox/100.0'}
-  print(f"GET {request}")
-  response = requests.get(request, headers=headers)
-  print(f"Response: {response.status_code}")
+  #print(f"GET {request}")
+  response = requests.get(request, headers=FAUX_USER)
+  #print(f"Response: {response.status_code}")
   response = response.json(); video = None
   for result in response:
     if(result['type'] == 'video'): 
@@ -241,6 +241,19 @@ def fillPlaylist(youtube, playlist, searchTerms):
     video = getRelevantVideo(searchTerms[i])
     playlistInsert(youtube, playlist, video)
 
+def getPlaylists(channelId, playlistName): # list all playlists on our account
+  print("Finding all playlists on your account.")
+  titles = []
+  response = dict(continuation='start')
+  while(response['continuation']):
+    continueString = "" if response['continuation'] == 'start' else f"&continuation={response['continuation']}"
+    request = f"https://invidious.snopyta.org/api/v1/channels/{channelId}/playlists?fields=playlists(title),continuation{continueString}"
+    response = requests.get(request, headers=FAUX_USER)
+    response = response.json(); 
+    for playlist in response['playlists']: 
+      titles.append(playlist['title'])
+  return titles
+
 def spPlaylistPrintSettings():
   columns = safeNumberEntry("Enter the number of columns to display", 1, 10)
   return (columns, DEFAULT_CONSOLE_WIDTH // columns) 
@@ -253,7 +266,7 @@ if __name__ == '__main__':
 
   #youtube
   youtube = build("youtube", "v3", credentials=ytRecallCredentials(ytGetFlow("client_secret.json")))
-  id, name = ytGetChannelIdName(youtube); cost += CHANNEL_LOOKUP
+  channelId, ytName = ytGetChannelIdName(youtube); cost += CHANNEL_LOOKUP
   #spotify
   spotify = getSpotify()
   #spotify api interactions
@@ -271,15 +284,18 @@ if __name__ == '__main__':
     searchTerms = getSearches(spotify, spPlaylist['uri'])
 
     #youtube api interactions 
-    print(f"You're logged in as {name} on YouTube, with channel id [{id}].")
+    print(f"You're logged in as {ytName} on YouTube, with channel id [{channelId}].")
+    ytPlaylists = getPlaylists(channelId, spPlaylist['name'])
+    if spPlaylist['name'] in ytPlaylists: 
+      print(f"{ytName} already has the playlist '{spPlaylist['name']}', cannot overwrite.")
 
-    if(input(f"Create/update the playlist '{spPlaylist['name']}'? (y/n)\n").lower() != "y"): 
-      if(input("Refresh and choose another playlist? (y/n)\n").lower() != "y"): print("Quitting script."); exit = True
-      elif(input("Show refreshed list of playlists? (y/n)\n").lower() != "y"): spShowPlaylists = False
-      else: spShowPlaylists = True
-    else:
+    elif(input(f"Create/update the playlist '{spPlaylist['name']}'? (y/n)\n").lower() == "y"): 
       ytPlaylist = addPlaylist(youtube, spPlaylist['name'], private=False); cost += NEW_PLAYLIST #the main thing we care about of ytPlaylist is it's ID
       fillPlaylist(youtube, ytPlaylist, searchTerms); cost += PLAYLIST_ENTRY * len(searchTerms) #the costly part
       print(f"Playlist '{ytPlaylist['snippet']['title']}' fully built!")
+
+    if(input("Refresh and choose another playlist? (y/n)\n").lower() != "y"): print("Quitting script."); exit = True
+    elif(input("Show refreshed list of playlists? (y/n)\n").lower() != "y"): spShowPlaylists = False
+    else: spShowPlaylists = True
 
   print(f"Youtube quota cost: {cost}")
