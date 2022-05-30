@@ -9,5 +9,5 @@ With the harsh [quota](https://developers.google.com/youtube/v3/determine_quota_
 ### YouTube safety
 <img src="https://user-images.githubusercontent.com/45922387/170988636-fe998d9d-8b5f-4bb6-b616-6b8fa28db016.png" alt="image" width="700"/></img>
 ### Writing YouTube playlist
-<img src="https://user-images.githubusercontent.com/45922387/170873332-31fc7f25-0545-4a99-839b-006192f011ca.png" alt="image" width="700"/></img>
+<img src="https://user-images.githubusercontent.com/45922387/170989727-70bca017-15cf-402c-9f88-c418037027d1.png" alt="image" width="700"/></img>
 
