@@ -32,7 +32,7 @@ def spPrompt(sp):
   resultCurrentUser = sp.current_user()
   name = resultCurrentUser['display_name']
   id = resultCurrentUser['id']
-  print(f"You're logged in as your Spotify account {name} (id:{id}).")
+  print(f"You're logged in as {name} on spotify, with account id [{id}].")
 
 def inRange(x, lo, hi):
   return (x >= lo and x <= hi)
@@ -123,9 +123,10 @@ def getSearches(sp, uri):
 
 ## youtube methods 
 
-def ytGetChannelId(youtube): #only costs 1 quota unit to look up by ID :) 
+def ytGetChannelIdName(youtube): #only costs 1 quota unit to look up by ID :) 
   request = youtube.channels().list(part='snippet, id', mine=True)
-  return request.execute()['items'][0]['id']
+  response = request.execute()
+  return (response['items'][0]['id'], response['items'][0]['snippet']['title'])
 # https://invidious.snopyta.org/api/v1/channels/playlists/channelid use this for searching for playlists that already exist
 
 def ytGetFlow(secretLocation):
@@ -249,14 +250,12 @@ if __name__ == '__main__':
 
   #youtube api interactions 
   cost = 0
-  print(f"Your YouTube channel Id: {ytGetChannelId(youtube)}")
-  cost += CHANNEL_LOOKUP
+  id, name = ytGetChannelIdName(youtube); cost += CHANNEL_LOOKUP
+  print(f"You're logged in as {name} on YouTube, with channel id [{id}].")
   if(input(f"Create/update the playlist '{spPlaylist['name']}'? (y/n)\n").lower() != "y"): print("Exiting program.")
   else:
-    ytPlaylist = addPlaylist(youtube, spPlaylist['name'], private=False) #the main thing we care about of ytPlaylist is it's ID
-    cost += NEW_PLAYLIST
-    fillPlaylist(youtube, ytPlaylist, searchTerms)
-    cost += PLAYLIST_ENTRY * len(searchTerms)
+    ytPlaylist = addPlaylist(youtube, spPlaylist['name'], private=False); cost += NEW_PLAYLIST #the main thing we care about of ytPlaylist is it's ID
+    fillPlaylist(youtube, ytPlaylist, searchTerms); cost += PLAYLIST_ENTRY * len(searchTerms)
     print(f"Playlist '{ytPlaylist['snippet']['title']}' fully built!")
 
   print(f"Youtube quota cost: {cost}")
