@@ -10,4 +10,5 @@ With the harsh [quota](https://developers.google.com/youtube/v3/determine_quota_
 <img src="https://user-images.githubusercontent.com/45922387/170988636-fe998d9d-8b5f-4bb6-b616-6b8fa28db016.png" alt="image" width="700"/></img>
 ### Writing YouTube playlist
 <img src="https://user-images.githubusercontent.com/45922387/170989727-70bca017-15cf-402c-9f88-c418037027d1.png" alt="image" width="700"/></img>
-
+### Network outage tollerance 
+<img src="https://user-images.githubusercontent.com/45922387/171198793-504eec38-29de-4e92-8322-f808b8924665.png" alt="image" width="700"/></img>
