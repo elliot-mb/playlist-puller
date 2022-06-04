@@ -3,6 +3,11 @@ After authenticating your Spotify and YouTube accounts, this script makes calls 
 Each song title and artist of a selected Spotify playlist are searched (quota-cost free using the [Invidious API](https://docs.invidious.io/api/#get-apiv1videosid)), the most relevant result is then added to a newly-made YouTube playlist.\
 \
 With the harsh [quota](https://developers.google.com/youtube/v3/determine_quota_cost) limit that the YouTube API imposes on its users, this script can generate up to ~200 playlist entries per 24 hour period (even after mitigating the [search](https://developers.google.com/youtube/v3/docs/search/list#apps-script) cost originally present when just using the YouTube API).
+## How can I use it?
+I am working to turn this project into a web app, at which point the user will be able to simply authenticate with OAuth and use the app.\
+Presently it operates on a **client secret** and OAuth authentication; currently users besides myself will not be able to use this, as they need the Google Cloud and Spotify API application secrets. This is not important however, since Google Cloud Platform applications mandate the verification of apps before general users can authenticate their email. Any and all users would need manually adding as **test users** which isn't viable (there is also a hard limit of 100 test users), and quota limits would puncture the usability of the app regardless of this.\
+I will work on migrating completely to **Invidious' YouTube API** which will circumvent the need for verification and the quota limit.\
+This will give me the breathing space to put together a full web app, with a front end that makes request to my backend's API, which will sit on top of Invidious and Spotify and crunch the numbers instead of the client. The backend may use **FastAPI**, and the front, **React**. 
 ## Examples of usage
 ### Spotify interaction
 <img src="https://user-images.githubusercontent.com/45922387/170982137-2b48f31a-446a-42f1-adff-4286257f815a.png" alt="image" width="700"/></img>
