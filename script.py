@@ -5,6 +5,7 @@ import google.oauth2.credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from google.auth.transport.requests import Request 
+from googleapiclient.errors import HttpError
 
 import pickle
 import html
@@ -180,6 +181,7 @@ def ytRecallCredentials(flow):
         if not credentials or not credentials.valid:
           if credentials and credentials.expired and credentials.refresh_token:
             print("Refreshing Youtube access token.")
+            print(credentials)
             credentials.refresh(Request())
           else:
             print("Fetching new Youtube tokens.")
@@ -251,7 +253,20 @@ def playlistInsert(youtube, playlist, video):
     part='snippet, id',
     body=body
   )
-  response = request.execute()
+  repeat = True
+  fails = 0
+  while(repeat and fails < 10):
+    try: 
+      response = request.execute()
+      repeat = False
+    except HttpError as err:
+      if err.resp.status in [500]:
+        print("YouTube back end error status 500, retrying after 5 seconds...")
+        fails+=1
+        time.sleep(5)
+      else:
+        raise
+
 
 def fillPlaylist(youtube, playlist, searchTerms):
   for i in range(0, len(searchTerms)):
